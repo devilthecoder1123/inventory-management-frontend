@@ -1,15 +1,26 @@
+import { AlertTriangle, CheckCircle2, XCircle } from 'lucide-react';
 import type { Product } from '../../types';
+import { Badge } from './badge';
 
 export function StockBadge({ product }: { product: Pick<Product, 'quantity' | 'reorderLevel'> }) {
   const { quantity, reorderLevel } = product;
-  let cls = 'bg-emerald-100 text-emerald-700';
-  let label = 'In stock';
   if (quantity <= 0) {
-    cls = 'bg-red-100 text-red-700';
-    label = 'Out of stock';
-  } else if (quantity <= reorderLevel) {
-    cls = 'bg-amber-100 text-amber-700';
-    label = 'Low stock';
+    return (
+      <Badge variant="danger">
+        <XCircle size={12} /> Out of stock
+      </Badge>
+    );
   }
-  return <span className={`badge ${cls}`}>{label}</span>;
+  if (quantity <= reorderLevel) {
+    return (
+      <Badge variant="warning">
+        <AlertTriangle size={12} /> Low stock
+      </Badge>
+    );
+  }
+  return (
+    <Badge variant="success">
+      <CheckCircle2 size={12} /> In stock
+    </Badge>
+  );
 }
