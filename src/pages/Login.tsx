@@ -18,8 +18,6 @@ const loginSchema = z.object({
 });
 type LoginValues = z.infer<typeof loginSchema>;
 
-const DEMO = { email: 'admin@ims.dev', password: 'admin123' };
-
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -27,7 +25,6 @@ export default function Login() {
   const {
     register,
     handleSubmit,
-    setValue,
     formState: { errors },
   } = useForm<LoginValues>({ resolver: zodResolver(loginSchema), defaultValues: { email: '', password: '' } });
 
@@ -63,26 +60,6 @@ export default function Login() {
           Sign in
         </Button>
       </form>
-
-      <div className="mt-4 rounded-lg border border-neutral-200 bg-white p-3">
-        <div className="flex items-center justify-between">
-          <div className="text-xs">
-            <p className="font-medium text-neutral-700">Demo account</p>
-            <p className="text-neutral-400">admin@ims.dev · admin123</p>
-          </div>
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            onClick={() => {
-              setValue('email', DEMO.email);
-              setValue('password', DEMO.password);
-            }}
-          >
-            Use demo
-          </Button>
-        </div>
-      </div>
 
       <p className="mt-6 text-center text-sm text-neutral-500">
         Don’t have an account?{' '}
