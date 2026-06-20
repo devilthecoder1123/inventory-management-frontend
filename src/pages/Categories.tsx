@@ -1,16 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Pencil, Plus, Tags, Trash2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { categoryApi } from '../api/services';
+import { CategoryFormModal, type CategoryFormValues } from '../components/forms/CategoryFormModal';
 import { PageHeader } from '../components/PageHeader';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { EmptyState } from '../components/ui/empty-state';
-import { Modal } from '../components/ui/Modal';
-import { Spinner } from '../components/ui/Spinner';
 import { TableSkeleton } from '../components/ui/TableSkeleton';
 import { useAuth } from '../context/AuthContext';
 import { getErrorMessage } from '../lib/api';
@@ -21,22 +20,17 @@ export default function Categories() {
   const { user } = useAuth();
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Category | null>(null);
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
 
   const { data, isLoading } = useQuery({ queryKey: ['categories'], queryFn: categoryApi.list });
-
-  useEffect(() => {
-    setName(editing?.name ?? '');
-    setDescription(editing?.description ?? '');
-  }, [editing, formOpen]);
-
   const invalidate = () => qc.invalidateQueries({ queryKey: ['categories'] });
 
+  const openCreate = () => { setEditing(null); setFormOpen(true); };
+  const openEdit = (c: Category) => { setEditing(c); setFormOpen(true); };
+
   const saveMutation = useMutation({
-    mutationFn: () =>
-      editing ? categoryApi.update(editing.id, { name, description }) : categoryApi.create({ name, description }),
+    mutationFn: (values: CategoryFormValues) =>
+      editing ? categoryApi.update(editing.id, values) : categoryApi.create(values),
     onSuccess: () => {
       toast.success(editing ? 'Category updated' : 'Category created');
       setFormOpen(false);
@@ -61,11 +55,7 @@ export default function Categories() {
       <PageHeader
         title="Categories"
         description="Organize your products"
-        actions={
-          <Button onClick={() => { setEditing(null); setFormOpen(true); }}>
-            <Plus size={16} /> Add Category
-          </Button>
-        }
+        actions={<Button onClick={openCreate}><Plus size={16} /> Add Category</Button>}
       />
 
       <Card className="overflow-hidden">
@@ -90,11 +80,11 @@ export default function Categories() {
                     <td className="px-4 py-3"><Badge variant="neutral">{c._count?.products ?? 0}</Badge></td>
                     <td className="px-4 py-3">
                       <div className="flex items-center justify-end gap-0.5">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-neutral-400 hover:text-neutral-700" onClick={() => { setEditing(c); setFormOpen(true); }}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-neutral-400 hover:text-neutral-700" title="Edit" onClick={() => openEdit(c)}>
                           <Pencil size={15} />
                         </Button>
                         {user?.role === 'ADMIN' && (
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-neutral-400 hover:text-danger-600" onClick={() => setDeleteTarget(c)}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-neutral-400 hover:text-danger-600" title="Delete" onClick={() => setDeleteTarget(c)}>
                             <Trash2 size={15} />
                           </Button>
                         )}
@@ -110,30 +100,18 @@ export default function Categories() {
             icon={Tags}
             title="No categories yet"
             description="Create a category to organize products."
-            action={<Button size="sm" onClick={() => { setEditing(null); setFormOpen(true); }}><Plus size={15} /> Add Category</Button>}
+            action={<Button size="sm" onClick={openCreate}><Plus size={15} /> Add Category</Button>}
           />
         )}
       </Card>
 
-      <Modal open={formOpen} onClose={() => setFormOpen(false)} title={editing ? 'Edit Category' : 'Add Category'}>
-        <form onSubmit={(e) => { e.preventDefault(); saveMutation.mutate(); }} className="space-y-4">
-          <div>
-            <label className="label">Name *</label>
-            <input className="input" value={name} onChange={(e) => setName(e.target.value)} required />
-          </div>
-          <div>
-            <label className="label">Description</label>
-            <textarea className="input" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
-          </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="secondary" onClick={() => setFormOpen(false)}>Cancel</Button>
-            <Button type="submit" disabled={saveMutation.isPending}>
-              {saveMutation.isPending && <Spinner className="h-4 w-4" />} Save
-            </Button>
-          </div>
-        </form>
-      </Modal>
-
+      <CategoryFormModal
+        open={formOpen}
+        onClose={() => { setFormOpen(false); setEditing(null); }}
+        onSubmit={(v) => saveMutation.mutate(v)}
+        saving={saveMutation.isPending}
+        initial={editing}
+      />
       <ConfirmDialog
         open={Boolean(deleteTarget)}
         message={`Delete category "${deleteTarget?.name}"? Products will be uncategorized.`}

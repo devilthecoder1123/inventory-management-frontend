@@ -5,11 +5,12 @@ interface ModalProps {
   open: boolean;
   onClose: () => void;
   title: string;
+  description?: string;
   children: ReactNode;
   footer?: ReactNode;
 }
 
-export function Modal({ open, onClose, title, children, footer }: ModalProps) {
+export function Modal({ open, onClose, title, description, children, footer }: ModalProps) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     if (open) document.addEventListener('keydown', onKey);
@@ -19,17 +20,24 @@ export function Modal({ open, onClose, title, children, footer }: ModalProps) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="card relative z-10 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-3">
-          <h3 className="text-base font-semibold text-slate-800">{title}</h3>
-          <button onClick={onClose} className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={title}>
+      <div className="absolute inset-0 bg-neutral-900/40 backdrop-blur-sm animate-fade-in" onClick={onClose} />
+      <div className="relative z-10 max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl border border-neutral-200 bg-white shadow-lg animate-fade-in">
+        <div className="flex items-start justify-between gap-4 border-b border-neutral-100 px-5 py-3.5">
+          <div>
+            <h3 className="text-sm font-semibold tracking-tight text-neutral-900">{title}</h3>
+            {description && <p className="mt-0.5 text-xs text-neutral-500">{description}</p>}
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="-mr-1 rounded-md p-1 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-600"
+          >
             <X size={18} />
           </button>
         </div>
         <div className="px-5 py-4">{children}</div>
-        {footer && <div className="flex justify-end gap-2 border-t border-slate-200 px-5 py-3">{footer}</div>}
+        {footer && <div className="flex justify-end gap-2 border-t border-neutral-100 px-5 py-3.5">{footer}</div>}
       </div>
     </div>
   );

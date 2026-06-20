@@ -1,31 +1,33 @@
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 import { categoryApi, supplierApi } from '../../api/services';
 import type { Product } from '../../types';
+import { Button } from '../ui/button';
+import { FormField } from '../ui/field';
+import { Input } from '../ui/input';
 import { Modal } from '../ui/Modal';
+import { Select } from '../ui/select';
 import { Spinner } from '../ui/Spinner';
+import { Textarea } from '../ui/textarea';
 
-export interface ProductFormValues {
-  sku: string;
-  name: string;
-  description: string;
-  price: number;
-  costPrice: number;
-  quantity: number;
-  reorderLevel: number;
-  categoryId: string;
-  supplierId: string;
-}
+const productSchema = z.object({
+  sku: z.string().min(1, 'SKU is required').max(64),
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  description: z.string().max(1000).optional(),
+  price: z.number().min(0, 'Cannot be negative'),
+  costPrice: z.number().min(0, 'Cannot be negative'),
+  quantity: z.number().int('Whole numbers only').min(0, 'Cannot be negative'),
+  reorderLevel: z.number().int('Whole numbers only').min(0, 'Cannot be negative'),
+  categoryId: z.string().optional(),
+  supplierId: z.string().optional(),
+});
 
-interface Props {
-  open: boolean;
-  onClose: () => void;
-  onSubmit: (values: ProductFormValues) => void;
-  saving: boolean;
-  initial?: Product | null;
-}
+export type ProductFormValues = z.infer<typeof productSchema>;
 
-const empty: ProductFormValues = {
+const DEFAULTS: ProductFormValues = {
   sku: '',
   name: '',
   description: '',
@@ -37,126 +39,122 @@ const empty: ProductFormValues = {
   supplierId: '',
 };
 
+interface Props {
+  open: boolean;
+  onClose: () => void;
+  onSubmit: (values: ProductFormValues) => void;
+  saving: boolean;
+  initial?: Product | null;
+}
+
 export function ProductFormModal({ open, onClose, onSubmit, saving, initial }: Props) {
-  const [values, setValues] = useState<ProductFormValues>(empty);
+  const isEdit = Boolean(initial);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<ProductFormValues>({
+    resolver: zodResolver(productSchema),
+    defaultValues: DEFAULTS,
+  });
 
   const { data: categories } = useQuery({ queryKey: ['categories'], queryFn: categoryApi.list, enabled: open });
   const { data: suppliers } = useQuery({ queryKey: ['suppliers'], queryFn: supplierApi.list, enabled: open });
 
   useEffect(() => {
-    if (initial) {
-      setValues({
-        sku: initial.sku,
-        name: initial.name,
-        description: initial.description ?? '',
-        price: Number(initial.price),
-        costPrice: Number(initial.costPrice),
-        quantity: initial.quantity,
-        reorderLevel: initial.reorderLevel,
-        categoryId: initial.categoryId ?? '',
-        supplierId: initial.supplierId ?? '',
-      });
-    } else {
-      setValues(empty);
-    }
-  }, [initial, open]);
-
-  const set = (key: keyof ProductFormValues, value: string | number) =>
-    setValues((v) => ({ ...v, [key]: value }));
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit(values);
-  };
-
-  const isEdit = Boolean(initial);
+    if (!open) return;
+    reset(
+      initial
+        ? {
+            sku: initial.sku,
+            name: initial.name,
+            description: initial.description ?? '',
+            price: Number(initial.price),
+            costPrice: Number(initial.costPrice),
+            quantity: initial.quantity,
+            reorderLevel: initial.reorderLevel,
+            categoryId: initial.categoryId ?? '',
+            supplierId: initial.supplierId ?? '',
+          }
+        : DEFAULTS,
+    );
+  }, [initial, open, reset]);
 
   return (
-    <Modal open={open} onClose={onClose} title={isEdit ? 'Edit Product' : 'Add Product'}>
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <Modal
+      open={open}
+      onClose={onClose}
+      title={isEdit ? 'Edit product' : 'Add product'}
+      description={isEdit ? 'Update product details' : 'Create a new inventory item'}
+    >
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="label">SKU *</label>
-            <input className="input" value={values.sku} onChange={(e) => set('sku', e.target.value)} required disabled={isEdit} />
-          </div>
-          <div>
-            <label className="label">Name *</label>
-            <input className="input" value={values.name} onChange={(e) => set('name', e.target.value)} required />
-          </div>
+          <FormField label="SKU" required error={errors.sku?.message}>
+            <Input placeholder="ELE-001" disabled={isEdit} {...register('sku')} />
+          </FormField>
+          <FormField label="Name" required error={errors.name?.message}>
+            <Input placeholder="Wireless Mouse" {...register('name')} />
+          </FormField>
         </div>
 
-        <div>
-          <label className="label">Description</label>
-          <textarea
-            className="input"
-            rows={2}
-            value={values.description}
-            onChange={(e) => set('description', e.target.value)}
-          />
-        </div>
+        <FormField label="Description" error={errors.description?.message}>
+          <Textarea rows={2} placeholder="Optional notes about this product" {...register('description')} />
+        </FormField>
 
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="label">Selling Price (₹)</label>
-            <input type="number" step="0.01" min="0" className="input" value={values.price} onChange={(e) => set('price', Number(e.target.value))} />
-          </div>
-          <div>
-            <label className="label">Cost Price (₹)</label>
-            <input type="number" step="0.01" min="0" className="input" value={values.costPrice} onChange={(e) => set('costPrice', Number(e.target.value))} />
-          </div>
+          <FormField label="Selling price (₹)" error={errors.price?.message}>
+            <Input type="number" step="0.01" min="0" {...register('price', { valueAsNumber: true })} />
+          </FormField>
+          <FormField label="Cost price (₹)" error={errors.costPrice?.message}>
+            <Input type="number" step="0.01" min="0" {...register('costPrice', { valueAsNumber: true })} />
+          </FormField>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="label">Quantity</label>
-            <input
-              type="number"
-              min="0"
-              className="input"
-              value={values.quantity}
-              onChange={(e) => set('quantity', Number(e.target.value))}
-              disabled={isEdit}
-            />
-            {isEdit && <p className="mt-1 text-xs text-slate-400">Use stock movements to change quantity.</p>}
-          </div>
-          <div>
-            <label className="label">Reorder Level</label>
-            <input type="number" min="0" className="input" value={values.reorderLevel} onChange={(e) => set('reorderLevel', Number(e.target.value))} />
-          </div>
+          <FormField
+            label="Quantity"
+            error={errors.quantity?.message}
+            hint={isEdit ? 'Use stock movements to change quantity' : undefined}
+          >
+            <Input type="number" min="0" disabled={isEdit} {...register('quantity', { valueAsNumber: true })} />
+          </FormField>
+          <FormField label="Reorder level" error={errors.reorderLevel?.message}>
+            <Input type="number" min="0" {...register('reorderLevel', { valueAsNumber: true })} />
+          </FormField>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="label">Category</label>
-            <select className="input" value={values.categoryId} onChange={(e) => set('categoryId', e.target.value)}>
+          <FormField label="Category" error={errors.categoryId?.message}>
+            <Select {...register('categoryId')}>
               <option value="">— None —</option>
               {categories?.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.name}
                 </option>
               ))}
-            </select>
-          </div>
-          <div>
-            <label className="label">Supplier</label>
-            <select className="input" value={values.supplierId} onChange={(e) => set('supplierId', e.target.value)}>
+            </Select>
+          </FormField>
+          <FormField label="Supplier" error={errors.supplierId?.message}>
+            <Select {...register('supplierId')}>
               <option value="">— None —</option>
               {suppliers?.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
                 </option>
               ))}
-            </select>
-          </div>
+            </Select>
+          </FormField>
         </div>
 
-        <div className="flex justify-end gap-2 pt-2">
-          <button type="button" className="btn-secondary" onClick={onClose} disabled={saving}>
+        <div className="flex justify-end gap-2 pt-1">
+          <Button type="button" variant="secondary" onClick={onClose} disabled={saving}>
             Cancel
-          </button>
-          <button type="submit" className="btn-primary" disabled={saving}>
-            {saving && <Spinner className="h-4 w-4" />} {isEdit ? 'Save changes' : 'Create product'}
-          </button>
+          </Button>
+          <Button type="submit" disabled={saving}>
+            {saving && <Spinner className="h-4 w-4" />}
+            {isEdit ? 'Save changes' : 'Create product'}
+          </Button>
         </div>
       </form>
     </Modal>

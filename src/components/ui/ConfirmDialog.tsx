@@ -1,4 +1,6 @@
+import { Button } from './button';
 import { Modal } from './Modal';
+import { Spinner } from './Spinner';
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -26,16 +28,17 @@ export function ConfirmDialog({
       title={title}
       footer={
         <>
-          <button className="btn-secondary" onClick={onCancel} disabled={loading}>
+          <Button variant="secondary" onClick={onCancel} disabled={loading}>
             Cancel
-          </button>
-          <button className="btn-danger" onClick={onConfirm} disabled={loading}>
-            {loading ? 'Working...' : confirmLabel}
-          </button>
+          </Button>
+          <Button variant="danger" onClick={onConfirm} disabled={loading}>
+            {loading && <Spinner className="h-4 w-4" />}
+            {loading ? 'Working…' : confirmLabel}
+          </Button>
         </>
       }
     >
-      <p className="text-sm text-slate-600">{message}</p>
+      <p className="text-sm text-neutral-600">{message}</p>
     </Modal>
   );
 }

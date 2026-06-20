@@ -68,12 +68,16 @@ export function Layout() {
       {/* Main */}
       <div className="flex flex-1 flex-col">
         <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-neutral-200 bg-white/80 px-4 backdrop-blur md:px-6">
-          <div className="flex items-center gap-3">
-            <button className="md:hidden" onClick={() => setOpen(true)} aria-label="Open menu">
+          <div className="flex items-center gap-2.5 md:hidden">
+            <button onClick={() => setOpen(true)} aria-label="Open menu" className="rounded-md p-1 text-neutral-500 hover:bg-neutral-100">
               <Menu size={22} />
             </button>
-            <h1 className="text-sm font-medium text-neutral-400">Inventory Management System</h1>
+            <span className="grid h-7 w-7 place-items-center rounded-md bg-primary-600 text-white">
+              <Boxes className="h-4 w-4" />
+            </span>
+            <span className="text-sm font-semibold text-neutral-900">IMS</span>
           </div>
+          <div className="hidden md:block" />
           <div className="flex items-center gap-3">
             <div className="text-right">
               <p className="text-sm font-medium text-neutral-700">{user?.name}</p>

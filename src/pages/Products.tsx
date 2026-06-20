@@ -12,7 +12,9 @@ import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { EmptyState } from '../components/ui/empty-state';
+import { Input } from '../components/ui/input';
 import { Pagination } from '../components/ui/Pagination';
+import { Select } from '../components/ui/select';
 import { StockBadge } from '../components/ui/StockBadge';
 import { TableSkeleton } from '../components/ui/TableSkeleton';
 import { useAuth } from '../context/AuthContext';
@@ -110,22 +112,22 @@ export default function Products() {
       {/* Filters */}
       <Card className="flex flex-wrap items-center gap-2.5 p-3">
         <div className="relative min-w-[220px] flex-1">
-          <Search className="pointer-events-none absolute left-3 top-2.5 text-neutral-400" size={16} />
-          <input
-            className="input pl-9"
+          <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={16} />
+          <Input
+            className="pl-9"
             placeholder="Search by name or SKU…"
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
           />
         </div>
-        <select className="input w-auto" value={categoryId} onChange={(e) => { setCategoryId(e.target.value); setPage(1); }}>
+        <Select className="w-auto" value={categoryId} onChange={(e) => { setCategoryId(e.target.value); setPage(1); }}>
           <option value="">All categories</option>
           {categories?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
-        <select className="input w-auto" value={supplierId} onChange={(e) => { setSupplierId(e.target.value); setPage(1); }}>
+        </Select>
+        <Select className="w-auto" value={supplierId} onChange={(e) => { setSupplierId(e.target.value); setPage(1); }}>
           <option value="">All suppliers</option>
           {suppliers?.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-        </select>
+        </Select>
         <button
           onClick={() => { setLowStock((v) => !v); setPage(1); }}
           className={`inline-flex h-9 items-center gap-2 rounded-lg border px-3 text-sm font-medium transition-colors ${

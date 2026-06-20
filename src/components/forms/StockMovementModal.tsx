@@ -1,7 +1,38 @@
-import { useEffect, useState } from 'react';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 import type { MovementType, Product } from '../../types';
+import { Button } from '../ui/button';
+import { FormField } from '../ui/field';
+import { Input } from '../ui/input';
 import { Modal } from '../ui/Modal';
 import { Spinner } from '../ui/Spinner';
+import { cn } from '../../lib/cn';
+
+const movementSchema = z
+  .object({
+    type: z.enum(['IN', 'OUT', 'ADJUSTMENT']),
+    quantity: z.number().int('Whole numbers only'),
+    note: z.string().max(500).optional(),
+  })
+  .superRefine((val, ctx) => {
+    if (val.type === 'ADJUSTMENT' ? val.quantity < 0 : val.quantity <= 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['quantity'],
+        message: val.type === 'ADJUSTMENT' ? 'Cannot be negative' : 'Must be greater than zero',
+      });
+    }
+  });
+
+type MovementFormValues = z.infer<typeof movementSchema>;
+
+const TYPES: { value: MovementType; label: string; hint: string }[] = [
+  { value: 'IN', label: 'Stock In', hint: 'Add units to inventory' },
+  { value: 'OUT', label: 'Stock Out', hint: 'Remove units from inventory' },
+  { value: 'ADJUSTMENT', label: 'Adjust', hint: 'Set the exact on-hand quantity' },
+];
 
 interface Props {
   open: boolean;
@@ -11,84 +42,76 @@ interface Props {
   product: Product | null;
 }
 
-const types: { value: MovementType; label: string; hint: string }[] = [
-  { value: 'IN', label: 'Stock In', hint: 'Add units to inventory' },
-  { value: 'OUT', label: 'Stock Out', hint: 'Remove units from inventory' },
-  { value: 'ADJUSTMENT', label: 'Adjustment', hint: 'Set the exact on-hand quantity' },
-];
-
 export function StockMovementModal({ open, onClose, onSubmit, saving, product }: Props) {
-  const [type, setType] = useState<MovementType>('IN');
-  const [quantity, setQuantity] = useState(1);
-  const [note, setNote] = useState('');
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    reset,
+    formState: { errors },
+  } = useForm<MovementFormValues>({
+    resolver: zodResolver(movementSchema),
+    defaultValues: { type: 'IN', quantity: 1, note: '' },
+  });
+
+  const type = watch('type');
 
   useEffect(() => {
-    if (open) {
-      setType('IN');
-      setQuantity(1);
-      setNote('');
-    }
-  }, [open]);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit({ type, quantity, note });
-  };
-
-  const activeHint = types.find((t) => t.value === type)?.hint;
+    if (open) reset({ type: 'IN', quantity: 1, note: '' });
+  }, [open, reset]);
 
   return (
-    <Modal open={open} onClose={onClose} title={`Stock Movement — ${product?.name ?? ''}`}>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-600">
-          Current on-hand: <span className="font-semibold text-slate-800">{product?.quantity ?? 0}</span> units
+    <Modal open={open} onClose={onClose} title="Record stock movement" description={product?.name}>
+      <form
+        onSubmit={handleSubmit((v) => onSubmit({ type: v.type, quantity: v.quantity, note: v.note ?? '' }))}
+        className="space-y-4"
+        noValidate
+      >
+        <div className="flex items-center justify-between rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm">
+          <span className="text-neutral-500">Current on-hand</span>
+          <span className="font-semibold text-neutral-900 tabular-nums">{product?.quantity ?? 0} units</span>
         </div>
 
         <div>
-          <label className="label">Movement Type</label>
+          <p className="mb-1.5 text-xs font-medium text-neutral-700">Movement type</p>
           <div className="grid grid-cols-3 gap-2">
-            {types.map((t) => (
+            {TYPES.map((t) => (
               <button
                 key={t.value}
                 type="button"
-                onClick={() => setType(t.value)}
-                className={`rounded-lg border px-2 py-2 text-sm font-medium transition ${
+                aria-pressed={type === t.value}
+                onClick={() => setValue('type', t.value, { shouldValidate: true })}
+                className={cn(
+                  'rounded-lg border px-2 py-2 text-sm font-medium transition-colors',
                   type === t.value
-                    ? 'border-brand-500 bg-brand-50 text-brand-700'
-                    : 'border-slate-300 text-slate-600 hover:bg-slate-50'
-                }`}
+                    ? 'border-primary-500 bg-primary-50 text-primary-700'
+                    : 'border-neutral-200 text-neutral-600 hover:bg-neutral-50',
+                )}
               >
                 {t.label}
               </button>
             ))}
           </div>
-          <p className="mt-1 text-xs text-slate-400">{activeHint}</p>
+          <p className="mt-1.5 text-xs text-neutral-400">{TYPES.find((t) => t.value === type)?.hint}</p>
         </div>
 
-        <div>
-          <label className="label">{type === 'ADJUSTMENT' ? 'New Quantity' : 'Quantity'}</label>
-          <input
-            type="number"
-            min={type === 'ADJUSTMENT' ? 0 : 1}
-            className="input"
-            value={quantity}
-            onChange={(e) => setQuantity(Number(e.target.value))}
-            required
-          />
-        </div>
+        <FormField label={type === 'ADJUSTMENT' ? 'New quantity' : 'Quantity'} required error={errors.quantity?.message}>
+          <Input type="number" min={type === 'ADJUSTMENT' ? 0 : 1} {...register('quantity', { valueAsNumber: true })} />
+        </FormField>
 
-        <div>
-          <label className="label">Note (optional)</label>
-          <input className="input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Purchase order #123" />
-        </div>
+        <FormField label="Note" error={errors.note?.message}>
+          <Input placeholder="e.g. Purchase order #1042" {...register('note')} />
+        </FormField>
 
-        <div className="flex justify-end gap-2 pt-2">
-          <button type="button" className="btn-secondary" onClick={onClose} disabled={saving}>
+        <div className="flex justify-end gap-2 pt-1">
+          <Button type="button" variant="secondary" onClick={onClose} disabled={saving}>
             Cancel
-          </button>
-          <button type="submit" className="btn-primary" disabled={saving}>
-            {saving && <Spinner className="h-4 w-4" />} Record movement
-          </button>
+          </Button>
+          <Button type="submit" disabled={saving}>
+            {saving && <Spinner className="h-4 w-4" />}
+            Record movement
+          </Button>
         </div>
       </form>
     </Modal>

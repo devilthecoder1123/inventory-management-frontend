@@ -22,18 +22,3 @@
   }
 }
 
-@layer components {
-  /* Legacy utility classes kept so existing pages (Products/Categories/…) keep working. */
-  .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition focus:outline-none disabled:cursor-not-allowed disabled:opacity-60;
-  }
-  .btn-primary { @apply btn bg-primary-600 text-white hover:bg-primary-700; }
-  .btn-secondary { @apply btn border border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50; }
-  .btn-danger { @apply btn bg-danger-600 text-white hover:bg-danger-700; }
-  .input {
-    @apply w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm shadow-xs placeholder:text-neutral-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500;
-  }
-  .label { @apply mb-1 block text-sm font-medium text-neutral-700; }
-  .card { @apply rounded-xl border border-neutral-200 bg-white shadow-sm; }
-  .badge { @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium; }
-}
