@@ -85,7 +85,7 @@ export function StockMovementModal({ open, onClose, onSubmit, saving, product }:
                 className={cn(
                   'rounded-lg border px-2 py-2 text-sm font-medium transition-colors',
                   type === t.value
-                    ? 'border-primary-500 bg-primary-50 text-primary-700'
+                    ? 'border-neutral-900 bg-neutral-900 text-white'
                     : 'border-neutral-200 text-neutral-600 hover:bg-neutral-50',
                 )}
               >

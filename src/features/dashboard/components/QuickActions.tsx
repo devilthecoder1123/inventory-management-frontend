@@ -9,11 +9,13 @@ interface Action {
   className: string;
 }
 
+const CHIP = 'bg-neutral-100 text-neutral-600 group-hover:bg-neutral-900 group-hover:text-white';
+
 const ACTIONS: Action[] = [
-  { to: '/products', label: 'Add Product', icon: PackagePlus, className: 'bg-primary-50 text-primary-700 group-hover:bg-primary-100' },
-  { to: '/stock-movements', label: 'Record Stock', icon: ArrowLeftRight, className: 'bg-info-50 text-info-700 group-hover:bg-info-100' },
-  { to: '/categories', label: 'New Category', icon: Tags, className: 'bg-success-50 text-success-700 group-hover:bg-success-100' },
-  { to: '/suppliers', label: 'New Supplier', icon: Truck, className: 'bg-warning-50 text-warning-700 group-hover:bg-warning-100' },
+  { to: '/products', label: 'Add Product', icon: PackagePlus, className: CHIP },
+  { to: '/stock-movements', label: 'Record Stock', icon: ArrowLeftRight, className: CHIP },
+  { to: '/categories', label: 'New Category', icon: Tags, className: CHIP },
+  { to: '/suppliers', label: 'New Supplier', icon: Truck, className: CHIP },
 ];
 
 export function QuickActions() {

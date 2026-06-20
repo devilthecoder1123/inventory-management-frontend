@@ -104,7 +104,7 @@ export function DashboardPage() {
             label="Products"
             value={formatNumber(summary.totalProducts)}
             hint={`${summary.totalCategories} categories`}
-            iconClassName="bg-primary-50 text-primary-600"
+            iconClassName="bg-neutral-100 text-neutral-500"
           />
           <KpiStat
             icon={Warehouse}
@@ -116,7 +116,7 @@ export function DashboardPage() {
               intent: kpis!.netUnits >= 0 ? 'positive' : 'negative',
             }}
             hint={`in ${range}d`}
-            iconClassName="bg-info-50 text-info-600"
+            iconClassName="bg-neutral-100 text-neutral-500"
           />
           <KpiStat
             icon={IndianRupee}
@@ -128,7 +128,7 @@ export function DashboardPage() {
               intent: kpis!.valuePct >= 0 ? 'positive' : 'negative',
             }}
             hint={`in ${range}d`}
-            iconClassName="bg-success-50 text-success-600"
+            iconClassName="bg-neutral-100 text-neutral-500"
           />
           <KpiStat
             icon={AlertTriangle}
